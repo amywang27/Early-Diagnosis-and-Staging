@@ -1,0 +1,51 @@
+setwd("~/Downloads")
+install.packages("readODS", repos = "https://ropensci.r-universe.dev")
+install.packages("readODS")
+install.packages("xml2")
+install.packages("XML")
+install.packages("dplyr")
+install.packages("tidyverse")
+library(readODS)
+library("xml2")
+library("XML")
+library("dplyr")
+library("tidyverse")
+################################################################################
+# Load the dataset # 
+################################################################################
+
+df <- read_ods("CMA stage 2013-2020 data (corrected).ods", sheet = "Table_2", col_names = TRUE, skip = 2)
+View(df)
+Data_2019 <- df[df$`Diagnosis year(s)` == 2019, ]
+View(Data_2019)
+
+Data_2020 <- df[df$`Diagnosis year(s)` == 2020, ]
+View(Data_2020)
+
+Data_2020$`Unadjusted percentage diagnosed at stages 1 & 2 difference from 2019` <- Data_2020$`Unadjusted percentage diagnosed at stages 1 & 2` - Data_2020$`Geography name` %>% 
+  map_dbl(~ {
+    match_value <- Data_2019$`Geography name` == .
+    Data_2019$`Unadjusted percentage diagnosed at stages 1 & 2`[match_value]
+  })
+
+Data_2020$`Stage completeness % difference from 2019` <- Data_2020$`Stage completeness (%)` - Data_2020$`Geography name` %>% 
+  map_dbl(~ {
+    match_value <- Data_2019$`Geography name` == .
+    Data_2019$`Stage completeness (%)`[match_value]
+  })
+
+View(Data_2020)
+
+library(ggplot2)
+
+ggplot(Data_2020, aes(x = `Stage completeness % difference from 2019`, y = `Unadjusted percentage diagnosed at stages 1 & 2 difference from 2019`)) +
+  geom_point() +
+  labs(title = "Stage completeness % change vs. ED rate % change in 2020 from 2019",
+       x = "Stage completeness % change",
+       y = "ED rate % change")
+
+cor_result <- cor.test(Data_2020$`Unadjusted percentage diagnosed at stages 1 & 2 difference from 2019`, Data_2020$`Stage completeness % difference from 2019`)
+cor_coefficient <- cor_result$estimate
+p_value <- cor_result$p.value
+cor_coefficient
+p_value
